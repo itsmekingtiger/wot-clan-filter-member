@@ -11,7 +11,7 @@
 #     result = response_data_from_dict(json.loads(json_string))
 
 from dataclasses import dataclass
-from typing import Any, List, TypeVar, Type, cast, Callable
+from typing import Any, Optional, List, TypeVar, Type, cast, Callable
 from enum import Enum
 from datetime import datetime
 import dateutil.parser
@@ -44,6 +44,20 @@ def from_bool(x: Any) -> bool:
 def from_str(x: Any) -> str:
     assert isinstance(x, str)
     return x
+
+
+def from_none(x: Any) -> Any:
+    assert x is None
+    return x
+
+
+def from_union(fs, x):
+    for f in fs:
+        try:
+            return f(x)
+        except:
+            pass
+    assert False
 
 
 def to_float(x: Any) -> float:
@@ -130,7 +144,6 @@ class Item:
     personal_rating: int
     exp_per_battle: float
     damage_per_battle: float
-    online_status: bool
     frags_per_battle: float
     is_press: bool
     wins_percentage: float
@@ -140,6 +153,7 @@ class Item:
     id: int
     profile_link: str
     name: str
+    online_status: Optional[bool] = None
 
     @staticmethod
     def from_dict(obj: Any) -> 'Item':
@@ -150,7 +164,6 @@ class Item:
         personal_rating = from_int(obj.get("personal_rating"))
         exp_per_battle = from_float(obj.get("exp_per_battle"))
         damage_per_battle = from_float(obj.get("damage_per_battle"))
-        online_status = from_bool(obj.get("online_status"))
         frags_per_battle = from_float(obj.get("frags_per_battle"))
         is_press = from_bool(obj.get("is_press"))
         wins_percentage = from_float(obj.get("wins_percentage"))
@@ -160,7 +173,8 @@ class Item:
         id = from_int(obj.get("id"))
         profile_link = from_str(obj.get("profile_link"))
         name = from_str(obj.get("name"))
-        return Item(days_in_clan, last_battle_time, battles_per_day, personal_rating, exp_per_battle, damage_per_battle, online_status, frags_per_battle, is_press, wins_percentage, role, abnormal_results, battles_count, id, profile_link, name)
+        online_status = from_union([from_none, from_bool], obj.get("online_status"))
+        return Item(days_in_clan, last_battle_time, battles_per_day, personal_rating, exp_per_battle, damage_per_battle, frags_per_battle, is_press, wins_percentage, role, abnormal_results, battles_count, id, profile_link, name, online_status)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -170,7 +184,6 @@ class Item:
         result["personal_rating"] = from_int(self.personal_rating)
         result["exp_per_battle"] = to_float(self.exp_per_battle)
         result["damage_per_battle"] = to_float(self.damage_per_battle)
-        result["online_status"] = from_bool(self.online_status)
         result["frags_per_battle"] = to_float(self.frags_per_battle)
         result["is_press"] = from_bool(self.is_press)
         result["wins_percentage"] = to_float(self.wins_percentage)
@@ -180,6 +193,7 @@ class Item:
         result["id"] = from_int(self.id)
         result["profile_link"] = from_str(self.profile_link)
         result["name"] = from_str(self.name)
+        result["online_status"] = from_union([from_none, from_bool], self.online_status)
         return result
 
 
